@@ -1,0 +1,150 @@
+{% load static %}
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Profile - FlexiLance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <a href="{% url 'home' %}" class="text-2xl font-bold text-blue-600">FlexiLance</a>
+                    <a href="{% url 'dashboard' %}" class="text-gray-600 hover:text-blue-600">Dashboard</a>
+                    <a href="{% url 'profile' %}" class="text-gray-600 hover:text-blue-600">Profile</a>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <span class="text-gray-600">{{ user.username }}</span>
+                    <a href="{% url 'logout' %}" class="text-gray-600 hover:text-blue-600">Logout</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-2xl mx-auto py-8 px-4">
+        <!-- Header -->
+        <div class="mb-6">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Edit Profile</h1>
+            <p class="text-gray-600">Update your personal information and settings</p>
+        </div>
+
+        <!-- Messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="mb-4 p-4 rounded-lg {% if message.tags == 'error' %}bg-red-100 text-red-700{% elif message.tags == 'success' %}bg-green-100 text-green-700{% else %}bg-blue-100 text-blue-700{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Edit Form -->
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <form method="post" enctype="multipart/form-data" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- Avatar Upload -->
+                <div class="text-center">
+                    <div class="inline-block relative">
+                        {% if user.avatar %}
+                            <img src="{{ user.avatar.url }}" alt="Current Avatar" 
+                                 class="w-24 h-24 rounded-full object-cover border-4 border-gray-200 mb-4" id="avatar-preview">
+                        {% else %}
+                            <div class="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center border-4 border-gray-300 mb-4" id="avatar-placeholder">
+                                <i class="fas fa-user text-3xl text-gray-500"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.avatar.id_for_label }}" class="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-200 inline-flex items-center">
+                            <i class="fas fa-camera mr-2"></i>
+                            {% if user.avatar %}Change Photo{% else %}Upload Photo{% endif %}
+                        </label>
+                        {{ form.avatar }}
+                        {% if form.avatar.errors %}
+                            <div class="text-red-600 text-sm mt-2">
+                                {% for error in form.avatar.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Name Fields -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ form.first_name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-user mr-2 text-gray-400"></i>First Name
+                        </label>
+                        {{ form.first_name }}
+                        {% if form.first_name.errors %}
+                            <div class="text-red-600 text-sm mt-1">
+                                {% for error in form.first_name.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.last_name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-user mr-2 text-gray-400"></i>Last Name
+                        </label>
+                        {{ form.last_name }}
+                        {% if form.last_name.errors %}
+                            <div class="text-red-600 text-sm mt-1">
+                                {% for error in form.last_name.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Email -->
+                <div>
+                    <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-envelope mr-2 text-gray-400"></i>Email Address
+                    </label>
+                    {{ form.email }}
+                    {% if form.email.errors %}
+                        <div class="text-red-600 text-sm mt-1">
+                            {% for error in form.email.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Bio -->
+                <div>
+                    <label for="{{ form.bio.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-file-text mr-2 text-gray-400"></i>Bio
+                    </label>
+                    {{ form.bio }}
+                    <p class="text-sm text-gray-500 mt-1">Tell people about yourself and your experience (max 1000 characters)</p>
+                    {% if form.bio.errors %}
+                        <div class="text-red-600 text-sm mt-1">
+                            {% for error in form.bio.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Location and Phone -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ form.location.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-map-marker-alt mr-2 text-gray-400"></i>Location
+                        </label>
+                        {{ form.location }}
+                        {% if form.location.errors %}
+                            <div class="text-red-600 text-sm mt-1">
+                                {% for error in form.location.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.phone.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-phone mr-2 text-gray-400"></i>Phone Number
+                        </label>
+                        {{ form.phone }}
