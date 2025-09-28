@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlexiLance - Freelance Marketplace</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .slide-up { animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+        .hidden { display: none !important; }
+        .skill-tag { 
+            background: #e5f3ff; 
+            color: #1e40af; 
+            padding: 4px 8px; 
+            border-radius: 12px; 
+            font-size: 12px; 
+            display: inline-flex; 
+            align-items: center; 
+            margin: 2px;
+        }
+        .skill-tag button { 
+            margin-left: 4px; 
+            color: #1e40af; 
+            background: none; 
+            border: none; 
+            cursor: pointer; 
+        }
+        
+        /* Modal animations */
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+        }
+        .modal-content {
+            transform: translateY(-20px);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        .modal-backdrop:not(.hidden) .modal-content {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        /* Toast animations */
+        .toast-enter {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        .toast-enter-active {
+            transform: translateX(0);
+            opacity: 1;
+            transition: all 0.3s ease;
+        }
+        .toast-exit {
+            transform: translateX(100%);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Toast Container -->
+    <div id="toast-container" class="top-4 right-4 z-50 fixed space-y-2"></div>
+
+    <!-- Navigation -->
+    <nav class="top-0 z-40 sticky bg-white shadow-lg">
+        <div class="mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <h1 class="font-bold text-blue-600 text-2xl cursor-pointer" onclick="showPage('home')">FlexiLance</h1>
+                    </div>
+                    <div class="hidden md:flex md:space-x-8 md:ml-6">
+                        <a href="#" class="inline-flex items-center px-1 pt-1 border-transparent border-b-2 hover:border-blue-500 text-gray-900 transition-colors nav-link" data-page="home">
+                            <i class="mr-2 fas fa-home"></i>Home
+                        </a>
+                        <a href="#" class="inline-flex items-center px-1 pt-1 border-transparent border-b-2 hover:border-blue-500 text-gray-500 hover:text-gray-900 transition-colors nav-link" data-page="jobs">
+                            <i class="mr-2 fas fa-briefcase"></i>Find Work
+                        </a>
+                        <a href="#" class="inline-flex items-center px-1 pt-1 border-transparent border-b-2 hover:border-blue-500 text-gray-500 hover:text-gray-900 transition-colors nav-link" data-page="dashboard">
+                            <i class="mr-2 fas fa-tachometer-alt"></i>Dashboard
+                        </a>
+                        <a href="#" class="inline-flex items-center px-1 pt-1 border-transparent border-b-2 hover:border-blue-500 text-gray-500 hover:text-gray-900 transition-colors nav-link" data-page="messages">
+                            <i class="mr-2 fas fa-envelope"></i>Messages
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Auth Buttons / User Menu -->
+                <div class="flex items-center space-x-4" id="auth-section">
+                    <!-- Not logged in -->
+                    <div id="guest-menu" class="flex items-center space-x-2">
+                        <button class="px-3 py-2 rounded-md font-medium text-gray-600 hover:text-blue-600 text-sm transition-colors" onclick="showLogin()">
+                            <i class="mr-1 fas fa-sign-in-alt"></i>Login
+                        </button>
+                        <button class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md font-medium text-white text-sm transition-colors" onclick="showRegister()">
+                            <i class="mr-1 fas fa-user-plus"></i>Sign Up
+                        </button>
+                    </div>
+                    
+                    <!-- Logged in -->
+                    <div id="user-menu" class="hidden flex items-center space-x-4">
+                        <div class="relative">
+                            <button class="flex bg-gray-200 rounded-full focus:outline-none hover:ring-2 hover:ring-blue-300 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm transition-all" onclick="toggleUserDropdown()">
+                                <img class="rounded-full w-8 h-8 object-cover" id="user-avatar" src="https://via.placeholder.com/32?text=U" alt="User avatar">
+                            </button>
+                            <div id="user-dropdown" class="hidden right-0 z-50 absolute bg-white ring-opacity-5 shadow-lg mt-2 rounded-md ring-1 ring-black w-48 origin-top-right">
+                                <div class="py-1">
+                                    <div class="px-4 py-2 border-gray-100 border-b">
+                                        <p class="font-medium text-gray-900 text-sm" id="dropdown-user-name">User Name</p>
+                                        <p class="text-gray-500 text-sm" id="dropdown-user-email">user@example.com</p>
+                                    </div>
+                                    <a href="#" class="flex items-center hover:bg-gray-100 px-4 py-2 text-gray-700 text-sm transition-colors nav-link" data-page="profile">
+                                        <i class="mr-2 text-gray-400 fas fa-user"></i>Profile
+                                    </a>
+                                    <a href="#" class="flex items-center hover:bg-gray-100 px-4 py-2 text-gray-700 text-sm transition-colors nav-link" data-page="dashboard">
+                                        <i class="mr-2 text-gray-400 fas fa-tachometer-alt"></i>Dashboard
+                                    </a>
+                                    <a href="#" class="flex items-center hover:bg-gray-100 px-4 py-2 text-gray-700 text-sm transition-colors nav-link" data-page="settings">
+                                        <i class="mr-2 text-gray-400 fas fa-cog"></i>Settings
+                                    </a>
+                                    <div class="border-gray-100 border-t">
+                                        <a href="#" class="flex items-center hover:bg-gray-100 px-4 py-2 text-red-600 text-sm transition-colors" onclick="logout()">
+                                            <i class="mr-2 text-red-400 fas fa-sign-out-alt"></i>Sign out
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <span id="user-name" class="hidden sm:block font-medium text-gray-700 text-sm"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="hidden z-50 fixed inset-0 overflow-y-auto modal-backdrop">
+        <div class="sm:block flex justify-center items-center sm:p-0 px-4 pt-4 pb-20 min-h-screen text-center">
+            <div class="fixed inset-0 transition-opacity" onclick="hideModal('login-modal')">
+                <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+
+            <span class="hidden sm:inline-block sm:h-screen sm:align-middle">&#8203;</span>
+
+            <div class="inline-block bg-white shadow-xl sm:my-8 rounded-lg sm:w-full sm:max-w-lg overflow-hidden text-left sm:align-middle align-bottom transition-all transform modal-content">
+                <form id="login-form">
+                    <div class="bg-white sm:p-6 px-4 pt-5 pb-4 sm:pb-4">
+                        <div class="sm:flex sm:items-start">
+                            <div class="mt-3 sm:mt-0 w-full sm:text-left text-center">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="font-medium text-gray-900 text-lg leading-6">
+                                        <i class="mr-2 text-blue-600 fas fa-sign-in-alt"></i>Sign In
+                                    </h3>
+                                    <button type="button" onclick="hideModal('login-modal')" class="text-gray-400 hover:text-gray-600 transition-colors">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                
+                                <div class="space-y-4 mt-2">
+                                    <div>
+                                        <label for="login-username" class="block font-medium text-gray-700 text-sm">Username or Email</label>
+                                        <input type="text" id="login-username" name="username" required 
+                                               class="block shadow-sm mt-1 px-3 py-2 border border-gray-300 focus:border-blue-500 rounded-md focus:outline-none focus:ring-blue-500 w-full sm:text-sm"
+                                               placeholder="Enter your username or email">
+                                    </div>
+                                    
+                                    <div>
+                                        <label for="login-password" class="block font-medium text-gray-700 text-sm">Password</label>
+                                        <div class="relative mt-1">
+                                            <input type="password" id="login-password" name="password" required 
+                                                   class="block shadow-sm px-3 py-2 border border-gray-300 focus:border-blue-500 rounded-md focus:outline-none focus:ring-blue-500 w-full sm:text-sm"
+                                                   placeholder="Enter your password">
+                                            <button type="button" class="right-0 absolute inset-y-0 flex items-center pr-3" onclick="togglePassword('login-password')">
+                                                <i class="text-gray-400 fas fa-eye" id="login-password-toggle"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex justify-between items-center">
+                                        <div class="flex items-center">
+                                            <input id="remember-me" name="remember-me" type="checkbox" 
+                                                   class="border-gray-300 rounded focus:ring-blue-500 w-4 h-4 text-blue-600">
+                                            <label for="remember-me" class="block ml-2 text-gray-900 text-sm">Remember me</label>
+                                        </div>
+                                        <div class="text-sm">
+                                            <a href="#" class="font-medium text-blue-600 hover:text-blue-500">Forgot password?</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="sm:flex sm:flex-row-reverse bg-gray-50 px-4 sm:px-6 py-3">
+                        <button type="submit" 
+                                class="inline-flex justify-center bg-blue-600 hover:bg-blue-700 shadow-sm sm:ml-3 px-4 py-2 border border-transparent rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 w-full sm:w-auto font-medium text-white sm:text-sm text-base transition-colors">
+                            <i class="hidden mr-2 fas fa-spinner fa-spin" id="login-spinner"></i>
+                            <span id="login-btn-text">Sign In</span>
+                        </button>
+                        <button type="button" onclick="switchToRegister()" 
+                                class="inline-flex justify-center bg-white hover:bg-gray-50 shadow-sm mt-3 sm:mt-0 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 w-full sm:w-auto font-medium text-gray-700 sm:text-sm text-base transition-colors">
+                            Need an account?
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="register-modal" class="hidden z-50 fixed inset-0 overflow-y-auto modal-backdrop">
+        <div class="sm:block flex justify-center items-center sm:p-0 px-4 pt-4 pb-20 min-h-screen text-center">
+            <div class="fixed inset-0 transition-opacity" onclick="hideModal('register-modal')">
+                <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+
+            <span class="hidden sm:inline-block sm:h-screen sm:align-middle">&#8203;</span>
+
+            <div class="inline-block bg-white shadow-xl sm:my-8 rounded-lg sm:w-full sm:max-w-2xl overflow-hidden text-left sm:align-middle align-bottom transition-all transform modal-content">
+                <form id="register-form">
+                    <div class="bg-white sm:p-6 px-4 pt-5 pb-4 sm:pb-4">
+                        <div class="sm:flex sm:items-start">
+                            <div class="mt-3 sm:mt-0 w-full sm:text-left text-center">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="font-medium text-gray-900 text-lg leading-6">
+                                        <i class="mr-2 text-blue-600 fas fa-user-plus"></i>Create Account
+                                    </h3>
+                                    <button type="button" onclick="hideModal('register-modal')" class="text-gray-400 hover:text-gray-600 transition-colors">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                
+                                <div class="gap-4 grid grid-cols-1 md:grid-cols-2 mt-2">
+                                    <div>
+                                        <label for="register-first-name" class="block font-medium text-gray-700 text-sm">First Name *</label>
+                                        <input type="text" id="register-first-name" name="first_name" required 
+                                               class="block shadow-sm mt-1 px-3 py-2 border border-gray-300 focus:border-blue-500 rounded-md focus:outline-none focus:ring-blue-500 w-full sm:text-sm"
+                                               placeholder="John">
+                                    </div>
+                                    
+                                    <div>
+                                        <label for="register-last-name" class="block font-medium text-gray-700 text-sm">Last Name</label>
+                                        <input type="text" id="register-last-name" name="last_name" 
+                                               class="block shadow-sm mt-1 px-3 py-2 border border-gray-300 focus:border-blue-500 rounded-md focus:outline-none focus:ring-blue-500 w-full sm:text-sm"
+                                               placeholder="Doe">
+                                    </div>
+                                    
+                                    <div>
+                                        <label for="register-username" class="block font-medium text-gray-700 text-sm">Username *</label>
+                                        <input type="text" id="register-username" name="username" required 
+                                               class="block shadow-sm mt-1 px-3 py-2 border border-gray-300 focus:border-blue-500 rounded-md focus:outline-none focus:ring-blue-500 w-full sm:text-sm"
+                                               placeholder="johndoe">
+                                    </div>
+                                    
+                                    <div>
+                                        <label for="register-email" class="block font-medium text-gray-700 text-sm">Email *</label>
+                                        <input type="email" id="register-email" name="email" required 
+                                               class="block shadow-sm mt-1 px-3 py-2 border border-gray-300 focus:border-blue-500 rounded-md focus:outline-none focus:ring-blue-500 w-full sm:text-sm"
+                                               placeholder="john@example.com">
+                                    </div>
+                                    
+                                    <div class="md:col-span-2">
+                                        <label for="register-user-type" class="block font-medium text-gray-700 text-sm">I want to *</label>
+                                        <select id="register-user-type" name="user_type" required 
+                                                class="block shadow-sm mt-1 px-3 py-2 border border-gray-300 focus:border-blue-500 rounded-md focus:outline-none focus:ring-blue-500 w-full sm:text-sm">
+                                            <option value="">Select an option</option>
+                                            <option value="freelancer">Work as a Freelancer</option>
+                                            <option value="client">Hire Freelancers</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div>
+                                        <label for="register-password" class="block font-medium text-gray-700 text-sm">Password *</label>
+                                        <div class="relative mt-1">
+                                            <input type="password" id="register-password" name="password" required 
+                                                   class="block shadow-sm px-3 py-2 border border-gray-300 focus:border-blue-500 rounded-md focus:outline-none focus:ring-blue-500 w-full sm:text-sm"
+                                                   placeholder="Minimum 8 characters">
+                                            <button type="button" class="right-0 absolute inset-y-0 flex items-center pr-3" onclick="togglePassword('register-password')">
+                                                <i class="text-gray-400 fas fa-eye" id="register-password-toggle"></i>
+                                            </button>
+                                        </div>
+                                        <p class="mt-1 text-gray-500 text-xs">Must be at least 8 characters long</p>
+                                    </div>
+                                    
+                                    <div>
+                                        <label for="register-password-confirm" class="block font-medium text-gray-700 text-sm">Confirm Password *</label>
+                                        <div class="relative mt-1">
+                                            <input type="password" id="register-password-confirm" name="password_confirm" required 
+                                                   class="block shadow-sm px-3 py-2 border border-gray-300 focus:border-blue-500 rounded-md focus:outline-none focus:ring-blue-500 w-full sm:text-sm"
+                                                   placeholder="Confirm your password">
+                                            <button type="button" class="right-0 absolute inset-y-0 flex items-center pr-3" onclick="togglePassword('register-password-confirm')">
+                                                <i class="text-gray-400 fas fa-eye" id="register-password-confirm-toggle"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="md:col-span-2">
+                                        <div class="flex items-center">
+                                            <input id="terms-agreement" name="terms" type="checkbox" required 
+                                                   class="border-gray-300 rounded focus:ring-blue-500 w-4 h-4 text-blue-600">
+                                            <label for="terms-agreement" class="block ml-2 text-gray-900 text-sm">
+                                                I agree to the <a href="#" class="text-blue-600 hover:text-blue-500">Terms of Service</a> and 
+                                                <a href="#" class="text-blue-600 hover:text-blue-500">Privacy Policy</a>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="sm:flex sm:flex-row-reverse bg-gray-50 px-4 sm:px-6 py-3">
+                        <button type="submit" 
+                                class="inline-flex justify-center bg-blue-600 hover:bg-blue-700 shadow-sm sm:ml-3 px-4 py-2 border border-transparent rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 w-full sm:w-auto font-medium text-white sm:text-sm text-base transition-colors">
+                            <i class="hidden mr-2 fas fa-spinner fa-spin" id="register-spinner"></i>
+                            <span id="register-btn-text">Create Account</span>
+                        </button>
+                        <button type="button" onclick="switchToLogin()" 
+                                class="inline-flex justify-center bg-white hover:bg-gray-50 shadow-sm mt-3 sm:mt-0 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 w-full sm:w-auto font-medium text-gray-700 sm:text-sm text-base transition-colors">
+                            Have an account?
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="mx-auto sm:px-6 lg:px-8 py-6 max-w-7xl" id="main-content">
+        <!-- Home Page -->
+        <div id="home-page" class="page">
+            <!-- Hero Section -->
+            <div class="mb-12 py-20 rounded-lg text-white gradient-bg">
+                <div class="mx-auto px-6 max-w-4xl text-center">
+                    <h1 class="mb-6 font-bold text-5xl slide-up">Find the perfect freelance services for your business</h1>
+                    <p class="opacity-90 mb-8 text-xl">Connect with skilled professionals and get your projects done efficiently</p>
+                    <div class="flex sm:flex-row flex-col justify-center sm:space-x-4 space-y-4 sm:space-y-0">
+                        <button class="bg-white hover:bg-gray-100 px-8 py-3 rounded-lg font-semibold text-blue-600 transition-colors" onclick="showPage('jobs')">
+                            Find Freelancers
+                        </button>
+                        <button class="hover:bg-white px-8 py-3 border-2 border-white rounded-lg font-semibold text-white hover:text-blue-600 transition-colors" onclick="showRegister()">
+                            Start Selling
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features Section -->
+            <div class="gap-8 grid md:grid-cols-3 mb-12">
+                <div class="bg-white shadow-md p-6 rounded-lg card-hover">
+                    <div class="mb-4 text-blue-600 text-3xl">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h3 class="mb-2 font-semibold text-xl">Find Talent</h3>
+                    <p class="text-gray-600">Browse through thousands of skilled freelancers ready to work on your project.</p>
+                </div>
+                <div class="bg-white shadow-md p-6 rounded-lg card-hover">
+                    <div class="mb-4 text-blue-600 text-3xl">
+                        <i class="fas fa-handshake"></i>
+                    </div>
+                    <h3 class="mb-2 font-semibold text-xl">Work Together</h3>
+                    <p class="text-gray-600">Collaborate seamlessly with built-in messaging and project management tools.</p>
+                </div>
+                <div class="bg-white shadow-md p-6 rounded-lg card-hover">
+                    <div class="mb-4 text-blue-600 text-3xl">
+                        <i class="fas fa-credit-card"></i>
+                    </div>
+                    <h3 class="mb-2 font-semibold text-xl">Pay Safely</h3>
+                    <p class="text-gray-600">Secure payments with milestone-based releases and dispute resolution.</p>
+                </div>
+            </div>
+
+            <!-- Recent Jobs -->
+            <div class="bg-white shadow-md p-6 rounded-lg">
+                <h2 class="mb-6 font-bold text-2xl">Recent Job Postings</h2>
+                <div id="recent-jobs" class="space-y-4">
+                    <div class="flex justify-center items-center py-8">
+                        <i class="mr-2 text-gray-400 text-2xl fas fa-spinner fa-spin"></i>
+                        <p class="text-gray-600">Loading recent jobs...</p>
+                    </div>
+                </div>
+                <div class="mt-6 text-center">
+                    <button class="font-medium text-blue-600 hover:text-blue-800 transition-colors" onclick="showPage('jobs')">
+                        View All Jobs →
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Jobs Page -->
+        <div id="jobs-page" class="hidden page">
+            <div class="flex lg:flex-row flex-col gap-6">
+                <!-- Filters Sidebar -->
+                <div class="lg:w-1/4">
+                    <div class="top-24 sticky bg-white shadow-md p-6 rounded-lg">
+                        <h3 class="mb-4 font-semibold text-lg">Filter Jobs</h3>
+                        
+                        <!-- Search -->
+                        <div class="mb-4">
+                            <label class="block mb-2 font-medium text-gray-700 text-sm">Search</label>
+                            <input type="text" id="job-search" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full" placeholder="Search jobs...">
+                        </div>
+                        
+                        <!-- Category -->
+                        <div class="mb-4">
+                            <label class="block mb-2 font-medium text-gray-700 text-sm">Category</label>
+                            <select id="category-filter" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">
+                                <option value="">All Categories</option>
+                                <option value="web-development">Web Development</option>
+                                <option value="mobile-development">Mobile Development</option>
+                                <option value="design">Design</option>
+                                <option value="writing">Writing</option>
+                                <option value="marketing">Marketing</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Budget Type -->
+                        <div class="mb-4">
+                            <label class="block mb-2 font-medium text-gray-700 text-sm">Budget Type</label>
+                            <select id="budget-filter" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">
+                                <option value="">All Types</option>
+                                <option value="fixed">Fixed Price</option>
+                                <option value="hourly">Hourly Rate</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Experience Level -->
+                        <div class="mb-4">
+                            <label class="block mb-2 font-medium text-gray-700 text-sm">Experience Level</label>
+                            <select id="experience-filter" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">
+                                <option value="">All Levels</option>
+                                <option value="entry">Entry Level</option>
+                                <option value="intermediate">Intermediate</option>
+                                <option value="expert">Expert</option>
+                            </select>
+                        </div>
+                        
+                        <button onclick="applyFilters()" class="bg-blue-600 hover:bg-blue-700 py-2 rounded-md w-full text-white transition-colors">
+                            Apply Filters
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Jobs List -->
+                <div class="lg:w-3/4">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="font-bold text-2xl">Available Jobs</h2>
+                        <div class="user-type-client">
+                            <button onclick="showPostJob()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md text-white transition-colors">
+                                <i class="mr-2 fas fa-plus"></i>Post a Job
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="jobs-loading" class="hidden py-8 text-center">
+                        <i class="text-gray-400 text-2xl fas fa-spinner fa-spin"></i>
+                        <p class="mt-2 text-gray-600">Loading jobs...</p>
+                    </div>
+                    
+                    <div id="jobs-list" class="space-y-6">
+                        <!-- Sample jobs for demo -->
+                        <div class="bg-white shadow-md p-6 rounded-lg card-hover">
+                            <div class="flex justify-between items-start mb-4">
+                                <h3 class="font-semibold text-xl">E-commerce Website Development</h3>
+                                <span class="bg-green-100 px-2 py-1 rounded text-green-800 text-sm">Fixed Price</span>
+                            </div>
+                            <p class="mb-4 text-gray-600">We need a full-stack developer to build a modern e-commerce website with payment integration, inventory management, and user authentication.</p>
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                <span class="bg-blue-100 px-2 py-1 rounded text-blue-800 text-sm">React</span>
+                                <span class="bg-blue-100 px-2 py-1 rounded text-blue-800 text-sm">Node.js</span>
+                                <span class="bg-blue-100 px-2 py-1 rounded text-blue-800 text-sm">MongoDB</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <span class="font-bold text-green-600 text-2xl">$2,500</span>
+                                    <span class="ml-2 text-gray-500">Fixed Price</span>
+                                </div>
+                                <button class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-white transition-colors">
+                                    Apply Now
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Page -->
+        <div id="dashboard-page" class="hidden page">
+            <div class="mb-6">
+                <h2 class="font-bold text-2xl">Dashboard</h2>
+                <p class="text-gray-600">Welcome back! Here's an overview of your activity.</p>
+            </div>
+            
+            <!-- Stats Cards -->
+            <div class="gap-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 mb-8" id="dashboard-stats">
+                <div class="bg-white shadow-md p-6 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="text-blue-600 text-2xl">
+                            <i class="fas fa-briefcase"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-gray-600 text-sm">Active Projects</p>
+                            <p class="font-bold text-2xl">5</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white shadow-md p-6 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="text-green-600 text-2xl">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-gray-600 text-sm">Total Earnings</p>
+                            <p class="font-bold text-2xl">$12,450</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white shadow-md p-6 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="text-purple-600 text-2xl">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-gray-600 text-sm">Rating</p>
+                            <p class="font-bold text-2xl">4.9</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white shadow-md p-6 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="text-orange-600 text-2xl">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-gray-600 text-sm">Hours Worked</p>
+                            <p class="font-bold text-2xl">248</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Activity -->
+            <div class="bg-white shadow-md p-6 rounded-lg">
+                <h3 class="mb-4 font-semibold text-lg">Recent Activity</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center bg-gray-50 p-4 rounded">
+                        <div class="bg-green-500 mr-3 rounded-full w-3 h-3"></div>
+                        <div>
+                            <p class="font-medium">Project completed: Website Redesign</p>
+                            <p class="text-gray-500 text-sm">2 hours ago</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center bg-gray-50 p-4 rounded">
+                        <div class="bg-blue-500 mr-3 rounded-full w-3 h-3"></div>
+                        <div>
+                            <p class="font-medium">New proposal submitted</p>
+                            <p class="text-gray-500 text-sm">5 hours ago</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Messages Page -->
+        <div id="messages-page" class="hidden page">
+            <div class="flex bg-white shadow-md rounded-lg h-96 lg:h-[600px]">
+                <!-- Conversations List -->
+                <div class="border-gray-200 border-r w-1/3">
+                    <div class="p-4 border-gray-200 border-b">
+                        <h3 class="font-semibold text-lg">Messages</h3>
+                    </div>
+                    <div id="conversations-list" class="h-full overflow-y-auto">
+                        <!-- Sample conversations -->
+                        <div class="hover:bg-gray-50 p-4 border-b cursor-pointer">
+                            <div class="flex items-center">
+                                <img src="https://via.placeholder.com/40" class="mr-3 rounded-full w-10 h-10" alt="Avatar">
+                                <div class="flex-1">
+                                    <p class="font-medium">John Doe</p>
+                                    <p class="text-gray-500 text-sm">Ready to start the project...</p>
+                                </div>
+                                <span class="text-gray-400 text-xs">2h</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Chat Area -->
+                <div class="flex flex-col w-2/3">
+                    <div id="chat-messages" class="flex-1 space-y-3 p-4 overflow-y-auto">
+                        <div class="py-8 text-gray-500 text-center">
+                            Select a conversation to start messaging
+                        </div>
+                    </div>
+                    
+                    <div id="chat-input-area" class="hidden p-4 border-gray-200 border-t">
+                        <div class="flex space-x-2">
+                            <input type="text" id="message-input" class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Type your message...">
+                            <button onclick="sendMessage()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md text-white transition-colors">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Page -->
+        <div id="profile-page" class="hidden page">
+            <div class="bg-white shadow-md p-6 rounded-lg">
+                <div class="flex items-center space-x-6 mb-6">
+                    <div class="relative">
+                        <img id="profile-avatar" class="rounded-full w-24 h-24 object-cover" src="https://via.placeholder.com/96?text=U" alt="Profile">
+                        <button class="right-0 bottom-0 absolute bg-blue-600 hover:bg-blue-700 p-2 rounded-full text-white transition-colors">
+                            <i class="text-sm fas fa-camera"></i>
+                        </button>
+                    </div>
+                    <div>
+                        <h3 id="profile-name" class="font-bold text-2xl">John Doe</h3>
+                        <p id="profile-user-type" class="text-gray-600">Freelancer</p>
+                        <p id="profile-location" class="text-gray-500">New York, USA</p>
+                    </div>
+                </div>
+                
+                <div class="gap-8 grid lg:grid-cols-2">
+                    <!-- Profile Form -->
+                    <div>
+                        <h4 class="mb-4 font-semibold text-lg">Profile Information</h4>
+                        <form id="profile-form" class="space-y-4">
+                            <div class="gap-4 grid grid-cols-2">
+                                <div>
+                                    <label class="block mb-2 font-medium text-gray-700 text-sm">First Name</label>
+                                    <input type="text" id="profile-first-name" value="John" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">
+                                </div>
+                                <div>
+                                    <label class="block mb-2 font-medium text-gray-700 text-sm">Last Name</label>
+                                    <input type="text" id="profile-last-name" value="Doe" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block mb-2 font-medium text-gray-700 text-sm">Email</label>
+                                <input type="email" id="profile-email" value="john@example.com" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">
+                            </div>
+                            
+                            <div>
+                                <label class="block mb-2 font-medium text-gray-700 text-sm">Phone</label>
+                                <input type="text" id="profile-phone" value="+1 234 567 8900" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">
+                            </div>
+                            
+                            <div>
+                                <label class="block mb-2 font-medium text-gray-700 text-sm">Location</label>
+                                <input type="text" id="profile-location-input" value="New York, USA" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">
+                            </div>
+                            
+                            <div>
+                                <label class="block mb-2 font-medium text-gray-700 text-sm">Website</label>
+                                <input type="url" id="profile-website" value="https://johndoe.dev" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">
+                            </div>
+                            
+                            <div class="user-type-freelancer">
+                                <label class="block mb-2 font-medium text-gray-700 text-sm">Hourly Rate ($)</label>
+                                <input type="number" id="profile-hourly-rate" value="50" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">
+                            </div>
+                            
+                            <div>
+                                <label class="block mb-2 font-medium text-gray-700 text-sm">Bio</label>
+                                <textarea id="profile-bio" rows="4" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">Full-stack developer with 5+ years of experience in React, Node.js, and cloud technologies. Passionate about building scalable web applications.</textarea>
+                            </div>
+                            
+                            <div class="user-type-freelancer">
+                                <label class="block mb-2 font-medium text-gray-700 text-sm">Skills</label>
+                                <div id="skills-input" class="flex flex-wrap gap-2 mb-2">
+                                    <span class="skill-tag">React <button type="button" onclick="removeSkill(this)">×</button></span>
+                                    <span class="skill-tag">Node.js <button type="button" onclick="removeSkill(this)">×</button></span>
+                                    <span class="skill-tag">JavaScript <button type="button" onclick="removeSkill(this)">×</button></span>
+                                </div>
+                                <input type="text" id="new-skill" placeholder="Add a skill and press Enter" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">
+                            </div>
+                            
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-md text-white transition-colors">
+                                Update Profile
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <!-- Profile Stats -->
+                    <div>
+                        <h4 class="mb-4 font-semibold text-lg">Profile Stats</h4>
+                        <div class="space-y-4">
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <div class="font-bold text-blue-600 text-2xl" id="profile-jobs-count">23</div>
+                                <div class="text-gray-600 text-sm">Jobs Completed</div>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg user-type-freelancer">
+                                <div class="font-bold text-green-600 text-2xl" id="profile-earnings">$12,450</div>
+                                <div class="text-gray-600 text-sm">Total Earnings</div>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <div class="font-bold text-purple-600 text-2xl" id="profile-rating">4.9</div>
+                                <div class="text-gray-600 text-sm">Average Rating</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Page -->
+        <div id="settings-page" class="hidden page">
+            <div class="bg-white shadow-md p-6 rounded-lg">
+                <h2 class="mb-6 font-bold text-2xl">Settings</h2>
+                
+                <div class="space-y-8">
+                    <!-- Account Settings -->
+                    <div>
+                        <h3 class="mb-4 font-semibold text-lg">Account Settings</h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center py-3 border-b">
+                                <div>
+                                    <p class="font-medium">Email Notifications</p>
+                                    <p class="text-gray-500 text-sm">Receive email updates about your projects</p>
+                                </div>
+                                <label class="inline-flex relative items-center cursor-pointer">
+                                    <input type="checkbox" class="sr-only peer" checked>
+                                    <div class="peer after:top-[2px] after:left-[2px] after:absolute bg-gray-200 after:bg-white peer-checked:bg-blue-600 peer-checked:after:border-white rounded-full after:rounded-full peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 w-11 after:w-5 h-6 after:h-5 after:content-[''] after:transition-all peer-checked:after:translate-x-full"></div>
+                                </label>
+                            </div>
+                            
+                            <div class="flex justify-between items-center py-3 border-b">
+                                <div>
+                                    <p class="font-medium">SMS Notifications</p>
+                                    <p class="text-gray-500 text-sm">Receive text messages for urgent updates</p>
+                                </div>
+                                <label class="inline-flex relative items-center cursor-pointer">
+                                    <input type="checkbox" class="sr-only peer">
+                                    <div class="peer after:top-[2px] after:left-[2px] after:absolute bg-gray-200 after:bg-white peer-checked:bg-blue-600 peer-checked:after:border-white rounded-full after:rounded-full peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 w-11 after:w-5 h-6 after:h-5 after:content-[''] after:transition-all peer-checked:after:translate-x-full"></div>
+                                </label>
+                            </div>
+                            
+                            <div class="flex justify-between items-center py-3">
+                                <div>
+                                    <p class="font-medium">Two-Factor Authentication</p>
+                                    <p class="text-gray-500 text-sm">Add an extra layer of security to your account</p>
+                                </div>
+                                <button class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-white text-sm transition-colors">
+                                    Enable
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Privacy Settings -->
+                    <div>
+                        <h3 class="mb-4 font-semibold text-lg">Privacy Settings</h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center py-3 border-b">
+                                <div>
+                                    <p class="font-medium">Profile Visibility</p>
+                                    <p class="text-gray-500 text-sm">Control who can see your profile</p>
+                                </div>
+                                <select class="px-3 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                    <option>Public</option>
+                                    <option>Registered Users Only</option>
+                                    <option>Private</option>
+                                </select>
+                            </div>
+                            <div class="flex justify-between items-center py-3 border-b">
+                                <div>
+                                    <p class="font-medium">Search Engine Indexing</p>
+                                    <p class="text-gray-500 text-sm">Allow search engines to index your profile</p>
+                                </div>
+                                <label class="inline-flex relative items-center cursor-pointer">
+                                    <input type="checkbox" class="sr-only peer" checked>
+                                    <div class="peer after:top-[2px] after:left-[2px] after:absolute bg-gray-200 after:bg-white peer-checked:bg-blue-600 peer-checked:after:border-white rounded-full after:rounded-full peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 w-11 after:w-5 h-6 after:h-5 after:content-[''] after:transition-all peer-checked:after:translate-x-full"></div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Danger Zone -->
+                <div class="bg-red-50 mt-8 p-6 border border-red-200 rounded-lg">
+                    <h3 class="mb-4 font-semibold text-red-700 text-lg">Danger Zone</h3>
+                    <p class="mb-4 text-red-600">Deleting your account is permanent and cannot be undone.</p>
+                    <button class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-md text-white transition-colors">
+                        Delete Account
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white shadow-inner mt-12">
+        <div class="mx-auto px-4 sm:px-6 lg:px-8 py-6 max-w-7xl">
+            <div class="flex md:flex-row flex-col justify-between items-center">
+                <p class="text-gray-500 text-sm">&copy; 2025 FlexiLance. All rights reserved.</p>
+                <div class="flex space-x-4 mt-4 md:mt-0">
+                    <a href="#" class="text-gray-500 hover:text-blue-600 text-sm transition-colors">Terms</a>
+                    <a href="#" class="text-gray-500 hover:text-blue-600 text-sm transition-colors">Privacy</a>
+                    <a href="#" class="text-gray-500 hover:text-blue-600 text-sm transition-colors">Contact</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript Files -->
+    <!-- ✅ 1. API functions should load first -->
+    <script src="js/api.js"></script>
+
+    <!-- ✅ 2. Auth depends on API, so load after API -->
+    <script src="js/auth.js"></script>
+
+    <!-- ✅ 3. Core site-wide features (UI handlers, page switching, toasts, modals) -->
+    <script src="js/main.js"></script>
+
+    <!-- ✅ 4. Dashboard needs auth + API -->
+    <script src="js/dashboard.js"></script>
+
+    <!-- ✅ 5. Jobs module (relies on auth + API) -->
+    <script src="js/jobs.js"></script>
+
+    <!-- ✅ 6. Messaging module (needs auth + API) -->
+    <script src="js/messaging.js"></script>
+
+    <!-- ✅ 7. Profile management (relies on auth + API) -->
+    <script src="js/profile.js"></script>
+
+    <script>
+        // Password toggle functionality
+        function togglePassword(inputId) {
+            const passwordInput = document.getElementById(inputId);
+            const toggleIcon = document.getElementById(inputId + '-toggle');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.className = 'fas fa-eye-slash text-gray-400';
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.className = 'fas fa-eye text-gray-400';
+            }
+        }
+
+        // Skill management functionality
+        function removeSkill(button) {
+            button.parentElement.remove();
+        }
+
+        // Add skill on Enter key
+        document.addEventListener('DOMContentLoaded', function() {
+            const newSkillInput = document.getElementById('new-skill');
+            if (newSkillInput) {
+                newSkillInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter' && this.value.trim()) {
+                        e.preventDefault();
+                        const skillsContainer = document.getElementById('skills-input');
+                        const skillTag = document.createElement('span');
+                        skillTag.className = 'skill-tag';
+                        skillTag.innerHTML = `${this.value.trim()} <button type="button" onclick="removeSkill(this)">×</button>`;
+                        skillsContainer.appendChild(skillTag);
+                        this.value = '';
+                    }
+                });
+            }
+        });
+
+        // Enhanced form submission handlers
+        document.addEventListener('DOMContentLoaded', function() {
+            // Login form
+            const loginForm = document.getElementById('login-form');
+            if (loginForm) {
+                loginForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const submitBtn = this.querySelector('button[type="submit"]');
+                    const spinner = document.getElementById('login-spinner');
+                    const btnText = document.getElementById('login-btn-text');
+                    
+                    // Show loading state
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        if (spinner) spinner.classList.remove('hidden');
+                        if (btnText) btnText.textContent = 'Signing In...';
+                    }
+                    
+                    // Form will be handled by auth.js
+                });
+            }
+
+            // Register form  
+            const registerForm = document.getElementById('register-form');
+            if (registerForm) {
+                registerForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const submitBtn = this.querySelector('button[type="submit"]');
+                    const spinner = document.getElementById('register-spinner');
+                    const btnText = document.getElementById('register-btn-text');
+                    
+                    // Show loading state
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        if (spinner) spinner.classList.remove('hidden');
+                        if (btnText) btnText.textContent = 'Creating Account...';
+                    }
+                    
+                    // Form will be handled by auth.js
+                });
+            }
+        });
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('FlexiLance application loaded');
+            
+            // Initialize auth if available
+            if (typeof auth !== 'undefined') {
+                auth.init().catch(console.error);
+            }
+        });
+    </script>
+</body>
+</html>
