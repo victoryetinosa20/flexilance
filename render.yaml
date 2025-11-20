@@ -1,0 +1,24 @@
+databases:
+  - name: flexilancedb
+    plan: free
+    databaseName: flexilance
+    user: flexilance
+
+services:
+  - type: web
+    plan: free
+    name: flexilance
+    runtime: python
+    buildCommand: './build.sh'
+    startCommand: 'python -m gunicorn flexilance-mvp.flexilance.wsgi:application --bind 0.0.0.0:$PORT'
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: flexilancedb
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: WEB_CONCURRENCY
+        value: 4
+      - key: DEBUG
+        value: "False"
